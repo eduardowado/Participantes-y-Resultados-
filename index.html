@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Participantes y Resultados</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #555; padding: 8px; text-align: center; }
+    #toggle-btn { padding: 10px 20px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; display: none; }
+    #toggle-btn:hover { background-color: #0056b3; }
+    #tabla-container { display: none; }
+    
+    /* --- ESTILOS GENERALES DE LA TABLA --- */
+    th { font-weight: bold; height: 50px; vertical-align: middle; }
+    th:nth-child(1), td:nth-child(1) { width: 50px; }
+    th:nth-child(2), td:nth-child(2) { width: 300px; text-align: left; }
+
+    /* --- NUEVOS ESTILOS PARA JORNADA 4 --- */
+
+    /* Encabezado principal (QUINELA...) */
+    #thead th:nth-child(1) { background-color: #a4c2f4; color: black; }
+    
+    /* Fondo gris para nombres de participantes */
+    #tbody td:nth-child(2) { background-color: #efefef; }
+
+    /* Fila de Marcador Final en verde claro */
+    #tbody tr:first-child td { background-color: #d9ead3; }
+    #tbody tr:first-child td:nth-child(2) { font-weight: bold; }
+
+    /* Encabezados de Equipos en verde */
+    #thead th:nth-child(3), #thead th:nth-child(4), #thead th:nth-child(6), #thead th:nth-child(7), #thead th:nth-child(9), #thead th:nth-child(10), #thead th:nth-child(12), #thead th:nth-child(13), #thead th:nth-child(15), #thead th:nth-child(16), #thead th:nth-child(18), #thead th:nth-child(19), #thead th:nth-child(21), #thead th:nth-child(22), #thead th:nth-child(24), #thead th:nth-child(25) {
+      background-color: #93c47d;
+      color: white;
+    }
+
+    /* Encabezados de PUNTOS y TOTAL en gris */
+    #thead th:nth-child(5), #thead th:nth-child(8), #thead th:nth-child(11), #thead th:nth-child(14), #thead th:nth-child(17), #thead th:nth-child(20), #thead th:nth-child(23), #thead th:nth-child(26), #thead th:nth-child(29) {
+      background-color: #999999;
+      color: white;
+    }
+
+    /* Encabezados de COMODIN y GOLES en celeste */
+    #thead th:nth-child(27), #thead th:nth-child(28) {
+      background-color: #4dd0e1;
+      color: white;
+    }
+
+    /* Celdas de PUNTOS y TOTAL en amarillo */
+    #tbody td:nth-child(5), #tbody td:nth-child(8), #tbody td:nth-child(11), #tbody td:nth-child(14), #tbody td:nth-child(17), #tbody td:nth-child(20), #tbody td:nth-child(23), #tbody td:nth-child(26), #tbody td:nth-child(29) {
+      background-color: #fff2cc;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Participantes y Resultados</h2>
+  <button id="toggle-btn">Mostrar Participantes 2 veces click</button>
+
+  <div id="tabla-container">
+    <table id="tabla-participantes">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // ▼▼▼ PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE APPS SCRIPT ▼▼▼
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbyrzyo2GUxbTF4IN7DMo59t7MDbV_JJN3x3fXyvamm0fRymA2xp7_DecZAXXjDu1KPI/exec"; 
+    
+    const controlSheetID = "17mY9w_VPzCgJxWDQxl4YFJeLUn_vl45SMvQ1_-IO19o";
+    const controlSheetName = "Control";
+    const controlUrl = `https://docs.google.com/spreadsheets/d/${controlSheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(controlSheetName)}&range=A1`;
+
+    const toggleBtn = document.getElementById("toggle-btn");
+    const tablaContainer = document.getElementById("tabla-container");
+    let tablaCargada = false;
+
+    window.addEventListener('load', () => {
+      fetch(controlUrl)
+        .then(res => res.text()).then(text => {
+          const json = JSON.parse(text.substring(47).slice(0, -2));
+          const show = json.table.rows[0]?.c[0]?.v?.toUpperCase() === 'SI';
+          if (show) { toggleBtn.style.display = 'block'; }
+        }).catch(err => { console.error("Error al cargar control:", err); });
+    });
+
+    toggleBtn.addEventListener("click", () => {
+      if (tablaContainer.style.display === "none") {
+        tablaContainer.style.display = "block";
+        toggleBtn.textContent = "Ocultar Participantes";
+
+        if (!tablaCargada) {
+          // URL final con parámetro para evitar el caché
+          const finalUrl = webAppUrl + '?t=' + new Date().getTime();
+
+          fetch(finalUrl)
+            .then(res => res.json())
+            .then(data => {
+              const thead = document.getElementById("thead");
+              const tbody = document.getElementById("tbody");
+              thead.innerHTML = '';
+              tbody.innerHTML = '';
+
+              const headers = data.headers.map(header => `<th>${header}</th>`).join('');
+              thead.innerHTML = `<tr>${headers}</tr>`;
+
+              const marcadorRow = data.rows.shift();
+              
+              let marcadorCells = '';
+              data.headers.forEach(header => {
+                  marcadorCells += `<td>${marcadorRow[header]}</td>`;
+              });
+              tbody.innerHTML += `<tr>${marcadorCells}</tr>`;
+
+              data.rows.forEach(row => {
+                if (row[data.headers[0]] !== "") {
+                  let cells = '';
+                  data.headers.forEach(header => {
+                    cells += `<td>${row[header]}</td>`;
+                  });
+                  tbody.innerHTML += `<tr>${cells}</tr>`;
+                }
+              });
+
+              tablaCargada = true;
+            })
+            .catch(err => {
+              console.error("Error al cargar los datos:", err);
+              alert("No se pudo cargar la tabla. Revisa la URL de la Web App.");
+            });
+        }
+      } else {
+        tablaContainer.style.display = "none";
+        toggleBtn.textContent = "Mostrar Participantes";
+      }
+    });
+  </script>
+
+</body>
+</html>
