@@ -1,1 +1,1 @@
-# Participantes-y-Resultados-
+# Participantes y Resultados 
